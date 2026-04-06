@@ -1,0 +1,8 @@
+[project]
+name = "spider-ctf"
+version = "0.1.0"
+description = "Smart multi-file crypto challenge analyzer for CTF players"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12.0"
+]
