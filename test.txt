@@ -1,5 +1,4 @@
-Welcome to the CTF Challenge!
-n = 0xbf5d4e1f
+n = 0xbf5d4e1f...
 e = 3
-c = 123456789
-flag{spider_is_working_correctly}
+c = 34856403561386766465356404100780282463741873151
+flag{spider_win}

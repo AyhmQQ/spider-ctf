@@ -14,16 +14,16 @@ class Aggregator:
             filepath = entry['filepath']
             extracted = entry['extracted']
 
-            # Aggregate variables
+            # تجميع المتغيرات (n, e, c, etc)
             for var, val in extracted['variables'].items():
                 if var not in self.data['variables']:
                     self.data['variables'][var] = val
                     self.data['sources'][var] = filepath
                 elif self.data['variables'][var] != val:
-                    # Handle conflict - for now just keep the first one but could log
+                    # في حال وجود تعارض، يمكن إضافة منطق للتعامل معه هنا
                     pass
 
-            # Aggregate patterns
+            # تجميع الأنماط (Hex, Base64)
             for h in extracted['patterns']['hex']:
                 self.data['patterns']['hex'].add(h)
             for b in extracted['patterns']['base64']:

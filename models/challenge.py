@@ -2,10 +2,11 @@ class CryptoChallenge:
     def __init__(self, name="Unknown"):
         self.name = name
         self.files = []
-        self.variables = {}  # لتخزين n, e, c وغيرها
+        self.variables = {}
         self.patterns = {"hex": [], "base64": []}
         self.detected_type = None
         self.confidence = "Low"
+        self.details = ""
         self.suggestions = []
         self.flag_candidates = []
 

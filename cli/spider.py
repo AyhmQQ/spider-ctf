@@ -2,39 +2,48 @@ import argparse
 import sys
 import os
 
-# إضافة المجلد الرئيسي للمشروع إلى PYTHONPATH لضمان عمل الاستدعاءات (Imports)
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-from spider.core.engine import SpiderEngine
-from spider.reporting.formatter import ReportFormatter
-from spider.network.netcat import NetcatClient
-from spider.extractors.base import Extractor
+# إضافة المجلد الحالي إلى مسار بايثون لضمان العثور على الموديولات
+sys.path.append(os.getcwd())
 
 def inspect_command(args):
     """أمر فحص الملفات والمجلدات"""
+    # استيراد الموديولات داخل الدالة لتجنب أخطاء Circular Import
+    try:
+        from core.engine import SpiderEngine
+        from reporting.formatter import ReportFormatter
+    except ImportError as e:
+        print(f"[!] Error: Could not import core modules. {e}")
+        return
+
     print(f"[*] Starting Spider Analysis on: {args.paths}...")
     
     # تشغيل المحرك الأساسي
     engine = SpiderEngine(flag_format=args.flag_format)
     challenge_result = engine.run_full_analysis(args.paths)
     
-    # طباعة التقرير المنسق من طبقة Reporting
+    # طباعة التقرير المنسق
     ReportFormatter.print_summary(challenge_result)
 
 def netcat_command(args):
     """أمر الاتصال بسيرفر Netcat وتحليل البيانات الواردة"""
+    try:
+        from network.netcat import NetcatClient
+        from extractors.base import Extractor
+    except ImportError as e:
+        print(f"[!] Error: Could not import network modules. {e}")
+        return
+
     print(f"[*] Connecting to {args.host}:{args.port} (Passive Mode)...")
     
     nc = NetcatClient(args.host, args.port)
     data = nc.receive_passive()
     
-    print("\n" + "-"*20 + " RECEIVED DATA " + "-"*20)
+    print("\n" + "="*20 + " RECEIVED DATA " + "="*20)
     print(data)
-    print("-" * 55 + "\n")
+    print("=" * 55 + "\n")
     
-    # تحليل سريع للبيانات المستلمة من الشبكة
+    # تحليل سريع للبيانات المستلمة
     extractor = Extractor()
-    # محاكاة ملف وهمي للبيانات المستلمة لتحليلها
     nc_info = {'content': data, 'filepath': 'netcat_stream', 'type': 'text'}
     res = extractor.extract(nc_info)
     
@@ -52,14 +61,12 @@ def main():
     )
     
     # خيار تحديد صيغة الـ Flag (Regex)
-    parser.add_argument('--flag-format', default=r"flag\\{.*?\\}", help="Custom flag format regex (e.g., 'BRKCYS\\{.*?\\}')")
-
-
+    parser.add_argument('--flag-format', default=r"flag\{.*?\}", help="Custom flag format regex")
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # إعداد أمر Inspect
-    inspect_parser = subparsers.add_parser('inspect', help='Analyze files or directories for crypto signals')
+    inspect_parser = subparsers.add_parser('inspect', help='Analyze files or directories')
     inspect_parser.add_argument('paths', nargs='+', help='Paths to files or directories')
     inspect_parser.set_defaults(func=inspect_command)
 
@@ -79,6 +86,8 @@ def main():
             sys.exit(0)
         except Exception as e:
             print(f"\n[!] Critical Error: {e}")
+            import traceback
+            traceback.print_exc()
     else:
         parser.print_help()
 

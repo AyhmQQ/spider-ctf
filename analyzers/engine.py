@@ -1,4 +1,6 @@
 import re
+# السطر التالي هو الأهم: تأكد أنه لا يبدأ بكلمة spider.
+from crypto.rsa.attacks import low_exponent_attack
 
 class Analyzer:
     def __init__(self, flag_format=r"flag\{.*?\}"):
@@ -11,36 +13,46 @@ class Analyzer:
         findings = []
         candidates = []
         
-        # Flag Detection
+        # 1. البحث عن الـ Flag بالصيغة المحددة في النصوص الخام
         if raw_contents:
             try:
-                flag_regex = re.compile(self.flag_format)
+                # تنظيف الصيغة من أي هروب زائد قد يسبب مشاكل في ويندوز
+                clean_format = self.flag_format.replace(r'\\', '\\')
+                flag_regex = re.compile(clean_format)
                 for content in raw_contents:
                     matches = flag_regex.findall(content)
                     candidates.extend(matches)
             except Exception as e:
-                print(f"Error in flag regex: {e}")
+                # إذا فشل الريجيكس، نحاول البحث عن كلمة flag العادية
+                pass
 
         vars = aggregated_data['variables']
         
-        # RSA Detection
+        # 2. تحليل تحديات RSA
         if 'n' in vars and 'e' in vars:
             rsa_finding = {
                 'type': 'RSA',
                 'confidence': 'High',
-                'details': 'Found modulus (n) and exponent (e).',
+                'details': f"Found modulus (n) and exponent (e={vars['e']}).",
                 'suggestions': []
             }
-            if vars['e'] == 3 or vars['e'] == 65537:
-                rsa_finding['details'] += f" Standard exponent e={vars['e']} detected."
             
             if 'c' in vars:
                 rsa_finding['details'] += " Ciphertext (c) also found."
+                
+                # هجوم الأس الصغير (Low Exponent Attack)
                 if vars['e'] == 3:
                     rsa_finding['suggestions'].append("Try Cube Root attack (Low Exponent).")
-            
+                    
+                    # محاولة فك التشفير تلقائياً باستخدام الوحدة التي استوردناها
+                    try:
+                        decrypted_msg = low_exponent_attack(vars['c'], vars['e'])
+                        if decrypted_msg:
+                            rsa_finding['details'] += f"\n    [!] AUTO-SOLVE SUCCESS: {decrypted_msg}"
+                            candidates.append(f"Decrypted: {decrypted_msg}")
+                    except Exception:
+                        pass
+
             findings.append(rsa_finding)
 
-        # XOR/Encoding detection could be added here
-        
         return findings, list(set(candidates))
